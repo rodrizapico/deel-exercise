@@ -178,12 +178,14 @@ describe('Jobs Test', () => {
             'Response didn\'t have OK status'
           );
 
-          const {Profile} = app.get('models');
+          const {Profile, Job} = app.get('models');
           const client = await Profile.findOne({ where: { id: 1 } });
           const contractor = await Profile.findOne({ where: { id: 5 } });
+          const job = await Job.findOne({ where: { id: 1 } });
 
-          chai.assert.equal(client.balance, 950, 'Client didn\'t have expected balance');
+          chai.assert.equal(client.balance, 1030, 'Client didn\'t have expected balance');
           chai.assert.equal(contractor.balance, 264, 'Contractor didn\'t have expected balance');
+          chai.assert.equal(job.paid, true, 'Job wasn\'t marked as paid');
 
           done(err);
         });
