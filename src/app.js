@@ -44,4 +44,31 @@ app.get('/contracts', getProfile, async (req, res) =>{
     res.json(contracts);
 });
 
+/**
+ * @returns unpaid jobs for requesting user.
+ */
+app.get('/jobs/unpaid', getProfile, async (req, res) =>{
+    const {Job, Contract} = req.app.get('models');
+
+    const profileId = req.profile.id;
+    const jobs = await Job.findAll({
+      where: { paid: { [app.get('sequelize').Op.not]: true } },
+      include: [
+        {
+          model: Contract,
+          attributes: [],
+          where: {
+            [app.get('sequelize').Op.or]: [
+              {ClientId: profileId},
+              {ContractorId: profileId}
+            ],
+            status: 'in_progress'
+          }
+        }
+      ]
+    });
+
+    res.json(jobs);
+});
+
 module.exports = app;
