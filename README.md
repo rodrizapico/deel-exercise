@@ -126,8 +126,12 @@ When you have finished the assignment, create a github repository and send us th
 Thank you and good luck! 🙏
 
 
-# Additional info from solution
+# Additional information about the solution
 
 ## Docker
 
 I added a simple Dockerfile + docker-compose. Using these (and assuming you have Docker installed, obviously), you can start the project by running `docker-compose build && docker-compose up` in the root directory. To run the seed command for the DB, just run `docker-compose exec app npm run seed` from a separate terminal once the container is running (or start it with the `-d` flag to have it running in the background).
+
+## Tests
+
+To run the tests, simply run `npm test`, or `docker-compose exec app npm test` if running the dockerized environment.
