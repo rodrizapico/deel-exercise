@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "nodemon ./src/server.js",
-    "test": "mocha test/",
+    "test": "npm run seed && mocha test/",
     "seed": "node ./scripts/seedDb.js"
   },
   "devDependencies": {

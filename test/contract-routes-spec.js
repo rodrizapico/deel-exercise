@@ -6,7 +6,7 @@ var app = require('../src/app');
 
 chai.use(chaiHttp);
 
-describe('Contract Test', () => {
+describe('Contracts Test', () => {
   describe('GET /contracts/:id', () => {
     it('should return status 401 when called without profile_id header', (done) => {
       chai.request(app)
