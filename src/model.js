@@ -5,6 +5,8 @@ const sequelize = new Sequelize({
   storage: './database.sqlite3'
 });
 
+sequelize.Op = Sequelize.Op;
+
 class Profile extends Sequelize.Model {}
 Profile.init(
   {
