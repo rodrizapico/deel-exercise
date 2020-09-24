@@ -72,7 +72,7 @@ app.get('/jobs/unpaid', getProfile, async (req, res) =>{
 });
 
 /**
- * @returns wether the job was successfuly paid for.
+ * @returns whether the job was successfuly paid for.
  */
 app.post('/jobs/:job_id/pay', getProfile, async (req, res) =>{
     const {Job, Contract} = req.app.get('models');
@@ -99,6 +99,42 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) =>{
     await contractor.save();
 
     req.profile.balance -= job.price;
+    await req.profile.save();
+
+    job.paid = true;
+    await job.save();
+
+    res.json({ result: 'OK' });
+});
+
+/**
+ * @returns whether the balance was successfuly added.
+ */
+app.post('/balances/deposit/:userId', getProfile, async (req, res) =>{
+    const {Job, Contract} = req.app.get('models');
+    const profileId = req.profile.id;
+
+    if (req.profile.type === 'contractor' || profileId != req.params.userId)
+      return res.status(401).end();
+
+    const jobs = await Job.findAll({
+      where: { paid: { [app.get('sequelize').Op.not]: true } },
+      include: [
+        {
+          model: Contract,
+          attributes: [],
+          where: {ClientId: profileId},
+        }
+      ]
+    });
+
+    const totalDue = jobs.reduce((accum, job) => accum + job.price, 0);
+
+    if (req.body.addedBalance > totalDue / 4)
+      return res.status(401).json({ result: 'EXCEEDED_25_PERCENT' });
+
+    // TODO: should add a try/catch here to check for errors.
+    req.profile.balance += req.body.addedBalance;
     await req.profile.save();
 
     res.json({ result: 'OK' });
