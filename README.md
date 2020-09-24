@@ -134,4 +134,4 @@ I added a simple Dockerfile + docker-compose. Using these (and assuming you have
 
 ## Tests
 
-To run the tests, simply run `npm test`, or `docker-compose exec app npm test` if running the dockerized environment.
+To run the tests, simply run `npm test`, or `docker-compose exec app npm test` if running the dockerized environment. Due to the time restraints of the exercise, the tests run on the same sqlite DB as the real app, so every time you run the tests, the DB is reset using the `seed` script to ensure consistency across multiple runs.
