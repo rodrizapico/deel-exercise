@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const moment = require('moment');
 const {sequelize} = require('./model');
 const {getProfile} = require('./middleware/getProfile');
 const app = express();
@@ -138,6 +139,104 @@ app.post('/balances/deposit/:userId', getProfile, async (req, res) =>{
     await req.profile.save();
 
     res.json({ result: 'OK' });
+});
+
+/**
+ * @returns the profession that earned most in the given time period.
+ */
+app.get('/admin/best-profession', async (req, res) =>{
+    const { Job, Contract, Profile } = req.app.get('models');
+
+    const fromDate = req.query.start;
+    const toDate = req.query.end;
+
+    const earningsPerProfession = await Profile.findAll({
+      where: { type: 'contractor' },
+      attributes: [ 'profession' ],
+      include: [{ 
+        model: Contract,
+        as: 'Contractor',
+        required: true,
+        attributes: [],
+        include: [{
+          model: Job,
+          required: true,
+          attributes: [
+            [app.get('sequelize').fn('sum', app.get('sequelize').col('price')), 'earnings'],
+          ],
+          where: {
+            paymentDate: {
+              [app.get('sequelize').Op.gt]: moment(fromDate, 'YYYY-MM-DD').startOf('day'),
+              [app.get('sequelize').Op.lt]: moment(toDate, 'YYYY-MM-DD').endOf('day'),
+            },
+          }
+        }]
+      }],
+      group: ['profession'],
+      // See comment on next endpoint on why I'm doing the order like this.
+      order: app.get('sequelize').literal('`Contractor.Jobs.earnings` DESC'),
+      raw: true
+    });
+
+    res.json({ bestProfession: earningsPerProfession[0].profession });
+});
+
+/**
+ * @returns the clieents that paied the most in the given time period.
+ */
+app.get('/admin/best-clients', async (req, res) =>{
+    const { Job, Contract, Profile } = req.app.get('models');
+
+    const fromDate = req.query.start;
+    const toDate = req.query.end;
+    const limit = req.query.limit || 2;
+
+    var bestClients = await Profile.findAll({
+      where: { type: 'client' },
+      attributes: [ 'id', 'firstName', 'lastName' ],
+      include: [{ 
+        model: Contract,
+        as: 'Client',
+        required: true,
+        attributes: [],
+        include: [{
+          model: Job,
+          required: true,
+          attributes: [
+            [app.get('sequelize').fn('sum', app.get('sequelize').col('price')), 'paid'],
+          ],
+          where: {
+            paymentDate: {
+              [app.get('sequelize').Op.gt]: moment(fromDate, 'YYYY-MM-DD').startOf('day'),
+              [app.get('sequelize').Op.lt]: moment(toDate, 'YYYY-MM-DD').endOf('day'),
+            },
+          }
+        }]
+      }],
+      group: ['Profile.id'],
+      
+      // This syntax (as reccomended by Sequelize's documentation) is ignored and 
+      // just orders by descending profile id.
+      // order: [[Profile.associations.Client, Contract.associations.Jobs, 'paid', 'DESC']],
+      // So instead I'm using this literal syntax that works.
+      order: app.get('sequelize').literal('`Client.Jobs.paid` DESC'),
+      // However, when using the literal syntax, trying to use limit at the same time
+      // breaks everything, so I'll just limit it by hand after the query. 
+      // In real production code I wouldn't do this, but for this exercise it should 
+      // be fine.
+      // limit: limit,
+      raw: true
+    });
+
+    bestClients = bestClients.map((client) => {
+      return {
+        id: client.id,
+        fullName: client.firstName + ' ' + client.lastName,
+        paid: client['Client.Jobs.paid']
+      };
+    });
+
+    res.json(bestClients.slice(0, limit));
 });
 
 
