@@ -173,21 +173,12 @@ app.get('/admin/best-profession', async (req, res) =>{
         }]
       }],
       group: ['profession'],
+      // See comment on next endpoint on why I'm doing the order like this.
+      order: app.get('sequelize').literal('`Contractor.Jobs.earnings` DESC'),
       raw: true
     });
 
-    // Couldn't manage to get the 'order by' working at the same time as group with Sequelize 
-    // quickly, so to save time I just get the group results and find the best profession for 
-    // the period myself.
-    const topProfession = earningsPerProfession.map((profEarnings) => {
-      return {
-        profession: profEarnings.profession, 
-        earnings: profEarnings['Contractor.Jobs.earnings']  
-      };
-    }).reduce((accum, profEarnings) => profEarnings.earnings > accum.earnings ? profEarnings : accum)
-
-
-    res.json({ bestProfession: topProfession.profession });
+    res.json({ bestProfession: earningsPerProfession[0].profession });
 });
 
 /**

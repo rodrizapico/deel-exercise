@@ -11,7 +11,7 @@ describe('Admin Test', () => {
 
     it('should return best profession in date range', (done) => {
       chai.request(app)
-        .get('/admin/best-profession?start=2020-08-10&end=2020-08-14')
+        .get('/admin/best-profession?start=2020-08-10&end=2020-08-20')
         .end((err, res) => {
           chai.assert.strictEqual(
             res.status,
@@ -41,8 +41,6 @@ describe('Admin Test', () => {
             200,
             'Status was not 200'
           );
-
-          console.log(res.body);
 
           chai.assert.deepEqual(
             res.body, 
