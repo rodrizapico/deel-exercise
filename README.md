@@ -128,10 +128,14 @@ Thank you and good luck! 🙏
 
 # Additional information about the solution
 
-## Docker
+For some endpoints not all information was given (such as expected body for requests and responses, or how to handle certain validation errors), so I did my best to implement 'reasonable' defaults. 
 
-I added a simple Dockerfile + docker-compose. Using these (and assuming you have Docker installed, obviously), you can start the project by running `docker-compose build && docker-compose up` in the root directory. To run the seed command for the DB, just run `docker-compose exec app npm run seed` from a separate terminal once the container is running (or start it with the `-d` flag to have it running in the background).
+Since the idea was to get the application running in around the requested 3 hours, there wasn't much time allotted to designing the application architecture. However, I did priorize implementing tests, especially since they help clear up what my interpretation was for the expected inputs/outputs.
 
 ## Tests
 
 To run the tests, simply run `npm test`, or `docker-compose exec app npm test` if running the dockerized environment. Due to the time restraints of the exercise, the tests run on the same sqlite DB as the real app, so every time you run the tests, the DB is reset using the `seed` script to ensure consistency across multiple runs.
+
+## Docker
+
+I added a simple Dockerfile + docker-compose. Using these (and assuming you have Docker installed, obviously), you can start the project by running `docker-compose build && docker-compose up` in the root directory. To run the seed command for the DB, just run `docker-compose exec app npm run seed` from a separate terminal once the container is running (or start it with the `-d` flag to have it running in the background).
