@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const moment = require('moment');
 const {sequelize} = require('./model');
 const {getProfile} = require('./middleware/getProfile');
 const app = express();
@@ -138,6 +139,55 @@ app.post('/balances/deposit/:userId', getProfile, async (req, res) =>{
     await req.profile.save();
 
     res.json({ result: 'OK' });
+});
+
+/**
+ * @returns the profession that earned most in the given time period.
+ */
+app.get('/admin/best-profession', async (req, res) =>{
+    const { Job, Contract, Profile } = req.app.get('models');
+
+    const fromDate = req.query.start;
+    const toDate = req.query.end;
+
+    const earningsPerProfession = await Profile.findAll({
+      where: { type: 'contractor' },
+      attributes: [ 'profession' ],
+      include: [{ 
+        model: Contract,
+        as: 'Contractor',
+        required: true,
+        attributes: [],
+        include: [{
+          model: Job,
+          required: true,
+          attributes: [
+            [app.get('sequelize').fn('sum', app.get('sequelize').col('price')), 'earnings'],
+          ],
+          where: {
+            paymentDate: {
+              [app.get('sequelize').Op.gt]: moment(fromDate, 'YYYY-MM-DD').startOf('day'),
+              [app.get('sequelize').Op.lt]: moment(toDate, 'YYYY-MM-DD').endOf('day'),
+            },
+          }
+        }]
+      }],
+      group: ['profession'],
+      raw: true
+    });
+
+    // Couldn't manage to get the 'order by' working at the same time as group with Sequelize 
+    // quickly, so to save time I just get the group results and find the best profession for 
+    // the period myself.
+    const topProfession = earningsPerProfession.map((profEarnings) => {
+      return {
+        profession: profEarnings.profession, 
+        earnings: profEarnings['Contractor.Jobs.earnings']  
+      };
+    }).reduce((accum, profEarnings) => profEarnings.earnings > accum.earnings ? profEarnings : accum)
+
+
+    res.json({ bestProfession: topProfession.profession });
 });
 
 
