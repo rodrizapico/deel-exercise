@@ -190,6 +190,64 @@ app.get('/admin/best-profession', async (req, res) =>{
     res.json({ bestProfession: topProfession.profession });
 });
 
+/**
+ * @returns the clieents that paied the most in the given time period.
+ */
+app.get('/admin/best-clients', async (req, res) =>{
+    const { Job, Contract, Profile } = req.app.get('models');
+
+    const fromDate = req.query.start;
+    const toDate = req.query.end;
+    const limit = req.query.limit || 2;
+
+    var bestClients = await Profile.findAll({
+      where: { type: 'client' },
+      attributes: [ 'id', 'firstName', 'lastName' ],
+      include: [{ 
+        model: Contract,
+        as: 'Client',
+        required: true,
+        attributes: [],
+        include: [{
+          model: Job,
+          required: true,
+          attributes: [
+            [app.get('sequelize').fn('sum', app.get('sequelize').col('price')), 'paid'],
+          ],
+          where: {
+            paymentDate: {
+              [app.get('sequelize').Op.gt]: moment(fromDate, 'YYYY-MM-DD').startOf('day'),
+              [app.get('sequelize').Op.lt]: moment(toDate, 'YYYY-MM-DD').endOf('day'),
+            },
+          }
+        }]
+      }],
+      group: ['Profile.id'],
+      
+      // This syntax (as reccomended by Sequelize's documentation) is ignored and 
+      // just orders by descending profile id.
+      // order: [[Profile.associations.Client, Contract.associations.Jobs, 'paid', 'DESC']],
+      // So instead I'm using this literal syntax that works.
+      order: app.get('sequelize').literal('`Client.Jobs.paid` DESC'),
+      // However, when using the literal syntax, trying to use limit at the same time
+      // breaks everything, so I'll just limit it by hand after the query. 
+      // In real production code I wouldn't do this, but for this exercise it should 
+      // be fine.
+      // limit: limit,
+      raw: true
+    });
+
+    bestClients = bestClients.map((client) => {
+      return {
+        id: client.id,
+        fullName: client.firstName + ' ' + client.lastName,
+        paid: client['Client.Jobs.paid']
+      };
+    });
+
+    res.json(bestClients.slice(0, limit));
+});
+
 
 
 module.exports = app;
